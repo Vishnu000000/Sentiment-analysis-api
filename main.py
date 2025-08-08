@@ -1,5 +1,6 @@
 # File: main.py
 # This is the core of our project: the FastAPI application that serves the model.
+#
 # 1. It loads the pre-trained model from the .joblib file.
 # 2. It defines a Pydantic model for the request body.
 # 3. It creates a "/predict" endpoint that takes text input, uses the model
@@ -17,11 +18,19 @@ app = FastAPI(
     version="1.0"
 )
 
-# --- Pydantic Model for Input Data ---
+# --- Pydantic Models for Input and Output Data ---
 # This defines the structure of the request body for the /predict endpoint.
 # It expects a JSON object with a single key "text" of type string.
 class TextInput(BaseModel):
     text: str
+
+# This defines the structure of the JSON response.
+# By defining a specific response model, the API's contract is clear
+# to developers and tools like the interactive documentation.
+class PredictionResponse(BaseModel):
+    text: str
+    prediction: str
+    confidence: float
 
 # --- Loading the Model ---
 # Load the trained model pipeline when the application starts.
@@ -45,7 +54,7 @@ def read_root():
     """A root endpoint to confirm that the API is running."""
     return {"message": "Welcome to the Sentiment Analysis API. Use the /predict endpoint to make predictions."}
 
-@app.post("/predict", tags=["Prediction"])
+@app.post("/predict", tags=["Prediction"], response_model=PredictionResponse)
 def predict_sentiment(input_data: TextInput):
     """
     Predicts the sentiment of a given text.
@@ -78,7 +87,3 @@ def predict_sentiment(input_data: TextInput):
     except Exception as e:
         # Basic error handling for any unexpected issues during prediction.
         raise HTTPException(status_code=500, detail=f"An error occurred during prediction: {str(e)}")
-
-# To run this application:
-# 1. First, run `python model.py` to create the model file.
-# 2. Then, run `uvicorn main:app --reload` to start this API server.
